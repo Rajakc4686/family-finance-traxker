@@ -29,13 +29,24 @@ jobs:
       - name: Build APK
         run: |
           unzip family.zip -d project
-          ls project/
-          PROJECT_DIR=$(find project/ -name "gradlew" -exec dirname {} \; | head -1)
-          if [ -z "$PROJECT_DIR" ]; then
-            PROJECT_DIR=$(find project/ -name "build.gradle" -exec dirname {} \; | head -1)
+          echo "=== Project contents ==="
+          ls -la project/
+          echo "=== Find settings.gradle ==="
+          find project/ -name "settings.gradle*" -o -name "build.gradle*" | head -20
+          echo "=== Find gradlew ==="
+          find project/ -name "gradlew" | head -5
+          
+          # Find the actual project directory
+          SETTINGS=$(find project/ -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
+          if [ -n "$SETTINGS" ]; then
+            PROJECT_DIR=$(dirname "$SETTINGS")
+          else
+            PROJECT_DIR=$(find project/ -name "build.gradle" | head -1 | xargs dirname)
           fi
-          echo "Project: $PROJECT_DIR"
+          
+          echo "=== Building in: $PROJECT_DIR ==="
           cd "$PROJECT_DIR"
+          
           if [ -f gradlew ]; then
             chmod +x gradlew
             ./gradlew assembleDebug --no-daemon
