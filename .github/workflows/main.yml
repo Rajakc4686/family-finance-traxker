@@ -26,92 +26,10 @@ jobs:
         with:
           gradle-version: '8.2'
 
-      - name: Build APK
+      - name: Show HistoryViewModel
         run: |
           unzip FamilyFinanceTracker_fixed.zip -d project
           cd project/FamilyFinanceTracker_fixed
-          
-          cat > settings.gradle << 'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-                  maven { url 'https://jitpack.io' }
-              }
-          }
-          rootProject.name = "FamilyFinanceTracker"
-          include ':app'
-          EOF
-          
-          cat > build.gradle << 'EOF'
-          plugins {
-              id 'com.android.application' version '8.1.4' apply false
-              id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
-          }
-          EOF
-          
-          cat > gradle.properties << 'EOF'
-          android.useAndroidX=true
-          org.gradle.jvmargs=-Xmx2048m
-          android.nonTransitiveRClass=true
-          EOF
-          
-          # Fix uppercase resource filenames
-          cd app/src/main/res
-          find . -type f -name "*.xml" | while read file; do
-            dir=$(dirname "$file")
-            base=$(basename "$file")
-            lower=$(echo "$base" | tr 'A-Z' 'a-z')
-            if [ "$base" != "$lower" ]; then
-              mv "$file" "$dir/$lower"
-            fi
-          done
-          
-          # Fix empty XML files
-          find . -type f -name "*.xml" | while read file; do
-            if [ ! -s "$file" ]; then
-              echo '<?xml version="1.0" encoding="utf-8"?>
-          <resources>
-          </resources>' > "$file"
-            fi
-          done
-          find ./layout -type f -name "*.xml" 2>/dev/null | while read file; do
-            if [ ! -s "$file" ] || ! grep -q '<' "$file"; then
-              echo '<?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical">
-          </LinearLayout>' > "$file"
-            fi
-          done
-          
-          cd ../../../..
-          
-          # Fix HistoryViewModel.kt compile errors
-          HIST_FILE="app/src/main/java/com/example/familyfinancetracker/viewmodel/HistoryViewModel.kt"
-          if [ -f "$HIST_FILE" ]; then
-            sed -i 's/\.forEach {/\.forEach { it: Map.Entry<String, Any?> ->/g' "$HIST_FILE" 2>/dev/null || true
-            sed -i 's/it\.entries\.forEach {/it.entries.forEach { entry ->/g' "$HIST_FILE" 2>/dev/null || true
-          fi
-          
-          # Show the problematic lines for debugging
-          echo "=== HistoryViewModel.kt lines 65-90 ==="
-          sed -n '65,90p' "$HIST_FILE" 2>/dev/null || echo "File not found"
-          
-          gradle assembleDebug --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk
-          path: project/FamilyFinanceTracker_fixed/app/build/outputs/apk/debug/*.apk
+          echo "=== HistoryViewModel.kt ==="
+          cat app/src/main/java/com/example/familyfinancetracker/viewmodel/HistoryViewModel.kt
           
