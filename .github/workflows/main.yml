@@ -24,19 +24,32 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Extract ZIP and Build
+      - name: Build APK
         run: |
           unzip FamilyFinanceTracker_fixed.zip -d project
           cd project/FamilyFinanceTracker_fixed
-          
-          echo "=== settings.gradle ==="
-          cat settings.gradle || echo "empty"
-          
-          echo "=== Generating Gradle Wrapper ==="
+          echo 'include ":app"' > settings.gradle
+          cat > build.gradle << 'EOF'
+          buildscript {
+              ext.kotlin_version = '1.9.0'
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.0'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
-          
-          echo "=== Building APK ==="
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
