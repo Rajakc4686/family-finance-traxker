@@ -18,41 +18,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.2'
-
-      - name: Build APK
+      - name: Extract ZIP
         run: |
-          unzip family.zip -d project
-          echo "=== Project contents ==="
-          ls -la project/
-          echo "=== Find settings.gradle ==="
-          find project/ -name "settings.gradle*" -o -name "build.gradle*" | head -20
-          echo "=== Find gradlew ==="
-          find project/ -name "gradlew" | head -5
-          
-          # Find the actual project directory
-          SETTINGS=$(find project/ -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
-          if [ -n "$SETTINGS" ]; then
-            PROJECT_DIR=$(dirname "$SETTINGS")
-          else
-            PROJECT_DIR=$(find project/ -name "build.gradle" | head -1 | xargs dirname)
-          fi
-          
-          echo "=== Building in: $PROJECT_DIR ==="
+          unzip FamilyFinanceTracker_fixed.zip -d project
+          ls project/
+
+      - name: Find and Build
+        run: |
+          PROJECT_DIR=$(find project/ -name "gradlew" -exec dirname {} \; | head -1)
+          echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
-          
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug --no-daemon
-          else
-            gradle assembleDebug --no-daemon
-          fi
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
