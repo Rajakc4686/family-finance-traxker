@@ -2,9 +2,9 @@ name: Android Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -24,33 +24,33 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Extract ZIP and Fix Project Files
+        shell: bash
         run: |
           unzip -o FamilyFinanceTracker_fixed.zip -d project/
           cd project/FamilyFinanceTracker_fixed
-
-          echo 'pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-                  maven { url "https://jitpack.io" }
-              }
-          }
-          rootProject.name = "FamilyFinanceTracker_fixed"
-          include ":app"' > settings.gradle
-
-          echo 'plugins {
-              id "com.android.application" version "8.2.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.9.20" apply false
-          }' > build.gradle
-
+          printf 'pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url \"https://jitpack.io\" }
+    }
+}
+rootProject.name = \"FamilyFinanceTracker_fixed\"
+include \":app\"
+' > settings.gradle
+          printf 'plugins {
+    id \"com.android.application\" version \"8.2.0\" apply false
+    id \"org.jetbrains.kotlin.android\" version \"1.9.20\" apply false
+}
+' > build.gradle
           mkdir -p gradle/wrapper
           printf 'distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
@@ -58,17 +58,12 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
 ' > gradle/wrapper/gradle-wrapper.properties
-
-          if [ -f "Gradle.properties" ] && [ ! -f "gradle.properties" ]; then
-            cp Gradle.properties gradle.properties
-          fi
-
-          echo "=== Files Fixed ==="
-          cat settings.gradle
-          echo "---"
-          cat build.gradle
+          if [ -f "Gradle.properties" ] && [ ! -f "gradle.properties" ]; then cp Gradle.properties gradle.properties; fi
+          echo "=== settings.gradle ===" && cat settings.gradle
+          echo "=== build.gradle ===" && cat build.gradle
 
       - name: Generate Gradle Wrapper and Build
+        shell: bash
         run: |
           cd project/FamilyFinanceTracker_fixed
           gradle wrapper --gradle-version 8.5
