@@ -26,10 +26,141 @@ jobs:
         with:
           gradle-version: '8.2'
 
-      - name: Show HistoryViewModel
+      - name: Build APK
         run: |
           unzip FamilyFinanceTracker_fixed.zip -d project
           cd project/FamilyFinanceTracker_fixed
-          echo "=== HistoryViewModel.kt ==="
-          cat app/src/main/java/com/example/familyfinancetracker/viewmodel/HistoryViewModel.kt
+          
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url 'https://jitpack.io' }
+              }
+          }
+          rootProject.name = "FamilyFinanceTracker"
+          include ':app'
+          EOF
+          
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.1.4' apply false
+              id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
+          }
+          EOF
+          
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx2048m
+          android.nonTransitiveRClass=true
+          EOF
+          
+          # Fix uppercase resource filenames
+          cd app/src/main/res
+          find . -type f -name "*.xml" | while read file; do
+            dir=$(dirname "$file")
+            base=$(basename "$file")
+            lower=$(echo "$base" | tr 'A-Z' 'a-z')
+            if [ "$base" != "$lower" ]; then
+              mv "$file" "$dir/$lower"
+            fi
+          done
+          find . -type f -name "*.xml" | while read file; do
+            if [ ! -s "$file" ]; then
+              echo '<?xml version="1.0" encoding="utf-8"?>
+          <resources></resources>' > "$file"
+            fi
+          done
+          find ./layout -type f -name "*.xml" 2>/dev/null | while read file; do
+            if [ ! -s "$file" ] || ! grep -q '<' "$file"; then
+              echo '<?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
+          </LinearLayout>' > "$file"
+            fi
+          done
+          cd ../../../..
+          
+          # Fix HistoryViewModel.kt
+          cat > app/src/main/java/com/example/familyfinancetracker/viewmodel/HistoryViewModel.kt << 'EOF'
+          package com.example.familyfinancetracker.viewmodel
+
+          import androidx.lifecycle.LiveData
+          import androidx.lifecycle.MutableLiveData
+          import androidx.lifecycle.ViewModel
+          import androidx.lifecycle.viewModelScope
+          import com.example.familyfinancetracker.data.*
+          import kotlinx.coroutines.launch
+
+          class HistoryViewModel(private val repository: Repository) : ViewModel() {
+
+              private val _allTransactions = MutableLiveData<List<Any>>()
+              val allTransactions: LiveData<List<Any>> = _allTransactions
+
+              private val _filteredTransactions = MutableLiveData<List<Any>>()
+              val filteredTransactions: LiveData<List<Any>> = _filteredTransactions
+
+              fun loadAllTransactions(userId: Int) {
+                  viewModelScope.launch {
+                      val incomes = repository.getIncomesByUser(userId)
+                      val expenses = repository.getExpensesByUser(userId)
+                      val emis = repository.getEMIsByUser(userId)
+                      val borrows = repository.getBorrowsByUser(userId)
+                      
+                      val all = mutableListOf<Any>()
+                      incomes.forEach { all.add(it) }
+                      expenses.forEach { all.add(it) }
+                      emis.forEach { all.add(it) }
+                      borrows.forEach { all.add(it) }
+                      
+                      _allTransactions.postValue(all)
+                      _filteredTransactions.postValue(all)
+                  }
+              }
+
+              fun filterByType(type: String, userId: Int) {
+                  viewModelScope.launch {
+                      val filtered = when (type) {
+                          "Income" -> repository.getIncomesByUser(userId).map { it as Any }
+                          "Expense" -> repository.getExpensesByUser(userId).map { it as Any }
+                          "EMI" -> repository.getEMIsByUser(userId).map { it as Any }
+                          "Borrow" -> repository.getBorrowsByUser(userId).map { it as Any }
+                          else -> _allTransactions.value ?: emptyList()
+                      }
+                      _filteredTransactions.postValue(filtered)
+                  }
+              }
+
+              fun searchTransactions(query: String) {
+                  val all = _allTransactions.value ?: return
+                  if (query.isEmpty()) {
+                      _filteredTransactions.postValue(all)
+                      return
+                  }
+                  val filtered = all.filter { item ->
+                      item.toString().contains(query, ignoreCase = true)
+                  }
+                  _filteredTransactions.postValue(filtered)
+              }
+          }
+          EOF
+          
+          gradle assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: project/FamilyFinanceTracker_fixed/app/build/outputs/apk/debug/*.apk
           
