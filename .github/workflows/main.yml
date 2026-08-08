@@ -21,6 +21,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
       - name: Build APK
         run: |
           unzip FamilyFinanceTracker_fixed.zip -d project
@@ -61,12 +66,19 @@ jobs:
           android.nonTransitiveRClass=true
           EOF
           
-          # Create Gradle wrapper with correct version
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
+          # Create wrapper with Gradle 8.2
+          mkdir -p gradle/wrapper
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
           
-          # Build with specific Gradle version
-          ./gradlew assembleDebug --no-daemon
+          # Use gradle 8.2 directly
+          gradle --version
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
