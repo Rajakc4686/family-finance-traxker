@@ -27,12 +27,37 @@ jobs:
         run: |
           unzip -o FamilyFinanceTracker_fixed.zip -d project/
 
+      - name: List extracted contents
+        run: |
+          echo "=== Project Structure ==="
+          ls -la project/
+          echo "=== Inside FamilyFinanceTracker_fixed ==="
+          ls -la project/FamilyFinanceTracker_fixed/ || echo "Directory not found"
+          echo "=== Looking for settings.gradle ==="
+          find project/ -name "settings.gradle" -o -name "settings.gradle.kts" | head -10
+          echo "=== Looking for build.gradle ==="
+          find project/ -name "build.gradle" -o -name "build.gradle.kts" | head -10
+
       - name: Generate Gradle Wrapper and Build
         run: |
           cd project/FamilyFinanceTracker_fixed
-          gradle wrapper
+          # Generate wrapper
+          gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+          # Verify settings.gradle exists with include ':app'
+          if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
+            echo 'rootProject.name = "FamilyFinanceTracker_fixed"' > settings.gradle
+            echo "include ':app'" >> settings.gradle
+            echo "Created settings.gradle"
+          fi
+          # Verify app directory exists
+          if [ ! -d "app" ]; then
+            echo "ERROR: app/ directory not found!"
+            ls -la
+            exit 1
+          fi
+          # Build
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
