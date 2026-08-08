@@ -26,18 +26,13 @@ jobs:
       - name: Extract ZIP
         run: |
           unzip -o FamilyFinanceTracker_fixed.zip -d project/
-          echo "Extracted contents:"
-          ls -la project/
 
       - name: Generate Gradle Wrapper and Build
         run: |
           cd project/FamilyFinanceTracker_fixed
-          
-          # gradlew இல்லை என்பதால், wrapper generate செய்கிறோம்
           gradle wrapper
-          
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew :app:assembleDebug --no-daemon
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
