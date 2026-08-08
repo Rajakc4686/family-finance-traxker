@@ -31,7 +31,6 @@ jobs:
           unzip FamilyFinanceTracker_fixed.zip -d project
           cd project/FamilyFinanceTracker_fixed
           
-          # Fix settings.gradle
           cat > settings.gradle << 'EOF'
           pluginManagement {
               repositories {
@@ -45,13 +44,13 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
+                  maven { url 'https://jitpack.io' }
               }
           }
           rootProject.name = "FamilyFinanceTracker"
           include ':app'
           EOF
           
-          # Create root build.gradle
           cat > build.gradle << 'EOF'
           plugins {
               id 'com.android.application' version '8.1.4' apply false
@@ -59,25 +58,12 @@ jobs:
           }
           EOF
           
-          # Create gradle.properties
           cat > gradle.properties << 'EOF'
           android.useAndroidX=true
           org.gradle.jvmargs=-Xmx2048m
           android.nonTransitiveRClass=true
           EOF
           
-          # Create wrapper with Gradle 8.2
-          mkdir -p gradle/wrapper
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-          
-          # Use gradle 8.2 directly
-          gradle --version
           gradle assembleDebug --no-daemon
 
       - name: Upload APK
