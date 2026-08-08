@@ -10,37 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Extract ZIP
-      run: |
-        unzip FamilyFinanceTracker_fixed.zip -d project
-        ls project/
+      - name: Extract ZIP
+        run: |
+          unzip FamilyFinanceTracker_fixed.zip -d project
+          ls project/
 
-    - name: Find project root
-      run: |
-        # Find where build.gradle or settings.gradle is
-        find project/ -name "build.gradle*" -o -name "settings.gradle*" | head -20
+      - name: Find and Build
+        run: |
+          PROJECT_DIR=$(find project/ -name "gradlew" -exec dirname {} \; | head -1)
+          echo "Project directory: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
-    - name: Make gradlew executable
-      run: |
-        cd project/FamilyFinanceTracker_fixed || cd project
-        chmod +x gradlew
-
-    - name: Build Debug APK
-      run: |
-        cd project/FamilyFinanceTracker_fixed || cd project
-        ./gradlew assembleDebug --no-daemon
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug-apk
-        path: project/**/app/build/outputs/apk/debug/*.apk
-        
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: project/**/app/build/outputs/apk/debug/*.apk
+          
