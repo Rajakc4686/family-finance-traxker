@@ -24,37 +24,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
+      - name: Show app build.gradle
         run: |
           unzip FamilyFinanceTracker_fixed.zip -d project
           cd project/FamilyFinanceTracker_fixed
-          echo 'include ":app"' > settings.gradle
-          cat > build.gradle << 'EOF'
-          buildscript {
-              ext.kotlin_version = '1.9.0'
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.1.0'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          EOF
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk
-          path: project/FamilyFinanceTracker_fixed/app/build/outputs/apk/debug/*.apk
+          echo "=== app/build.gradle ==="
+          cat app/build.gradle
+          echo ""
+          echo "=== gradle.properties ==="
+          cat gradle.properties 2>/dev/null || echo "MISSING"
+          echo ""
+          echo "=== local.properties ==="
+          cat local.properties 2>/dev/null || echo "MISSING"
           
