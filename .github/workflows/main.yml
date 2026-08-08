@@ -12,28 +12,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Extract ZIP
+      - name: List ZIP contents
         run: |
+          echo "=== Files in repo ==="
+          ls -la
+          echo ""
+          echo "=== ZIP contents (first 100 files) ==="
+          unzip -l FamilyFinanceTracker_fixed.zip | head -100
+          echo ""
+          echo "=== Extracting ==="
           unzip FamilyFinanceTracker_fixed.zip -d project
-          ls project/
-
-      - name: Find and Build
-        run: |
-          PROJECT_DIR=$(find project/ -name "gradlew" -exec dirname {} \; | head -1)
-          echo "Project directory: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk
-          path: project/**/app/build/outputs/apk/debug/*.apk
+          echo ""
+          echo "=== Top level after extract ==="
+          ls -la project/
+          echo ""
+          echo "=== All gradle files ==="
+          find project/ -name "*.gradle*" | sort
+          echo ""
+          echo "=== All .kt files ==="
+          find project/ -name "*.kt" | head -20
+          echo ""
+          echo "=== All directories ==="
+          find project/ -type d | sort | head -50
           
