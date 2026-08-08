@@ -75,7 +75,7 @@ jobs:
             fi
           done
           
-          # Fix empty/corrupt XML files (0 bytes or invalid)
+          # Fix empty XML files
           find . -type f -name "*.xml" | while read file; do
             if [ ! -s "$file" ]; then
               echo '<?xml version="1.0" encoding="utf-8"?>
@@ -83,8 +83,6 @@ jobs:
           </resources>' > "$file"
             fi
           done
-          
-          # Fix layout XML files that are empty
           find ./layout -type f -name "*.xml" 2>/dev/null | while read file; do
             if [ ! -s "$file" ] || ! grep -q '<' "$file"; then
               echo '<?xml version="1.0" encoding="utf-8"?>
@@ -97,6 +95,17 @@ jobs:
           done
           
           cd ../../../..
+          
+          # Fix HistoryViewModel.kt compile errors
+          HIST_FILE="app/src/main/java/com/example/familyfinancetracker/viewmodel/HistoryViewModel.kt"
+          if [ -f "$HIST_FILE" ]; then
+            sed -i 's/\.forEach {/\.forEach { it: Map.Entry<String, Any?> ->/g' "$HIST_FILE" 2>/dev/null || true
+            sed -i 's/it\.entries\.forEach {/it.entries.forEach { entry ->/g' "$HIST_FILE" 2>/dev/null || true
+          fi
+          
+          # Show the problematic lines for debugging
+          echo "=== HistoryViewModel.kt lines 65-90 ==="
+          sed -n '65,90p' "$HIST_FILE" 2>/dev/null || echo "File not found"
           
           gradle assembleDebug --no-daemon
 
