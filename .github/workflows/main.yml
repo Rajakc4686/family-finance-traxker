@@ -64,6 +64,31 @@ jobs:
           android.nonTransitiveRClass=true
           EOF
           
+          # Fix uppercase resource filenames to lowercase
+          cd app/src/main/res
+          find . -type f -name "*.xml" | while read file; do
+            dir=$(dirname "$file")
+            base=$(basename "$file")
+            lower=$(echo "$base" | tr 'A-Z' 'a-z')
+            if [ "$base" != "$lower" ]; then
+              echo "Renaming: $file -> $dir/$lower"
+              mv "$file" "$dir/$lower"
+            fi
+          done
+          
+          # Fix values-night/themes.xml if corrupted
+          if [ -f values-night/themes.xml ]; then
+            if ! xmllint --noout values-night/themes.xml 2>/dev/null; then
+              echo '<?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.FamilyFinanceTracker" parent="Theme.Material3.DayNight.NoActionBar">
+              </style>
+          </resources>' > values-night/themes.xml
+            fi
+          fi
+          
+          cd ../../../..
+          
           gradle assembleDebug --no-daemon
 
       - name: Upload APK
