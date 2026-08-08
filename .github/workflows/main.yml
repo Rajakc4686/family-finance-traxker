@@ -64,28 +64,37 @@ jobs:
           android.nonTransitiveRClass=true
           EOF
           
-          # Fix uppercase resource filenames to lowercase
+          # Fix uppercase resource filenames
           cd app/src/main/res
           find . -type f -name "*.xml" | while read file; do
             dir=$(dirname "$file")
             base=$(basename "$file")
             lower=$(echo "$base" | tr 'A-Z' 'a-z')
             if [ "$base" != "$lower" ]; then
-              echo "Renaming: $file -> $dir/$lower"
               mv "$file" "$dir/$lower"
             fi
           done
           
-          # Fix values-night/themes.xml if corrupted
-          if [ -f values-night/themes.xml ]; then
-            if ! xmllint --noout values-night/themes.xml 2>/dev/null; then
+          # Fix empty/corrupt XML files (0 bytes or invalid)
+          find . -type f -name "*.xml" | while read file; do
+            if [ ! -s "$file" ]; then
               echo '<?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="Theme.FamilyFinanceTracker" parent="Theme.Material3.DayNight.NoActionBar">
-              </style>
-          </resources>' > values-night/themes.xml
+          </resources>' > "$file"
             fi
-          fi
+          done
+          
+          # Fix layout XML files that are empty
+          find ./layout -type f -name "*.xml" 2>/dev/null | while read file; do
+            if [ ! -s "$file" ] || ! grep -q '<' "$file"; then
+              echo '<?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
+          </LinearLayout>' > "$file"
+            fi
+          done
           
           cd ../../../..
           
